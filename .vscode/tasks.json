@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Compile",
+			"type": "shell",
+			"command": "g++.exe \"${fileDirname}\\${fileBasename}\" -o \"${fileDirname}\\${fileBasenameNoExtension}.exe\" -Ofast -m64 -std=c++23 -Wall -pipe -I\"E:/\"  -s -static",
+			"problemMatcher": [{
+				"owner": "cpp",
+				"fileLocation": "autoDetect",
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(note|warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				},
+				"severity": "info",
+				"source": "Compiler"
+			},
+			{
+				"owner": "cpp",
+				"fileLocation": "autoDetect",
+				"pattern": {
+					"regexp": "^.*ld.exe: .*?:.*?:(.*?):.*?: (.*)$",
+					"file": 1,
+					"message": 2
+				},
+				"severity": "info",
+				"source": "Linker"
+			}]
+		},
+		{
+			"label": "Run",
+			"type": "shell",
+			"command": "cd ${fileDirname};${fileDirname}\\${fileBasenameNoExtension}.exe",
+			"problemMatcher": []
+		},
+		{
+			"label": "Compile & Run",
+			"type": "shell",
+			"dependsOn": [
+				"Compile",
+				"Run"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		}
+	]
+}
