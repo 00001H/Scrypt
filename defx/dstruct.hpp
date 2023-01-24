@@ -108,6 +108,16 @@ namespace scrypt{
     class Dict{
         std::unordered_map<K,V> container;
         public:
+            List<K> keys() const{
+                List<K> kys;
+                for(const auto&[key,val] : container){
+                    kys.append(key);
+                }
+                return kys;
+            }
+            size_t size() const{
+                return container.size();
+            }
             template<typename... Args>
             static Dict<K,V> of(const K& key,const V& val,Args... remaining){
                 Dict<K,V> dic;
@@ -121,11 +131,11 @@ namespace scrypt{
             static Dict<K,V> of(){
                 return Dict<K,V>();
             }
-            typedef V(*reevaluator_type)(const K&, const V&);
+            using reevaluator_type = std::function<void(const K&, V&)>;
             void reevaluateEach(reevaluator_type func){
                 std::unordered_map<K,V> nc;
                 for(auto&[key,val] : container){
-                    nc.insert_or_assign(key,func(key,val));
+                    func(key,val);
                 }
             }
             bool addIfMissing(const K& key,const V& val){
@@ -343,7 +353,7 @@ namespace scrypt{
             }
             template<typename T>
             T as() const{
-                return std::any_cast<T>(a);
+                throw std::logic_error("unsupported Data::as specialization");
             }
     };
     template<>

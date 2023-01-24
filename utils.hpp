@@ -5,12 +5,6 @@
 #include"errors.hpp"
 #include"cppp.hpp"
 namespace scrypt{
-    [[__gnu__::__always_inline__]] long long inline wstold(const str& x,size_t* prsd){
-        return std::stold(x,prsd);
-    }
-    [[__gnu__::__always_inline__]] long long inline wstoll(const str& x,size_t* prsd){
-        return std::stoll(x,prsd);
-    }
     //logb(a) = log(a)/log(b)
     template<typename T>
     T log2p(T base, T number){
@@ -65,8 +59,15 @@ namespace scrypt{
         return result;
     }
     template<typename Numeric_T>
-    Numeric_T parse_num(str s,
-    std::function<Numeric_T(const str&,size_t*)> stdcvt){
+    Numeric_T parse_num(str s,bool is_bignum=false){
+        if(!s.length()){
+            throw std::invalid_argument("parse_num: no number");
+        }
+        bool invert = s[0]==L'-';
+        if(invert){
+            s = s.substr(1);
+        }
+        Numeric_T maxv = (is_bignum?-1:std::numeric_limits<Numeric_T>::max());
         while(s.contains(L'E')){
             s[s.find(L'E')] = L'e';
         }
@@ -76,9 +77,11 @@ namespace scrypt{
             if(bfore.empty()||after.empty()||after.contains(L'e')){
                 throw std::invalid_argument("parse_num: Invalid placement of \"e\" or multiple \"e\"s detected");
             }
-            Numeric_T mn = parse_num(bfore,stdcvt);
-            Numeric_T exp = parse_num(after,stdcvt);
-            return mn*safepow<Numeric_T>(10,exp);
+            Numeric_T mn = parse_num<Numeric_T>(bfore);
+            Numeric_T exp = parse_num<Numeric_T>(after);
+            Numeric_T rslt = mn*safepow<Numeric_T>(10,exp);
+            if(invert)return -rslt;
+            return rslt;
         }
         if(s.contains('.')){
             if(!std::is_floating_point_v<Numeric_T>){
@@ -89,16 +92,44 @@ namespace scrypt{
             if(bfore.empty()||after.empty()||after.contains(L'.')){
                 throw std::invalid_argument("parse_num: Invalid placement of \".\" or multiple \".\"s detected");
             }
-            Numeric_T whl = parse_num(bfore,stdcvt);
-            Numeric_T dcml = parse_num(after,stdcvt);
+            Numeric_T whl = parse_num<Numeric_T>(bfore);
+            Numeric_T dcml = parse_num<Numeric_T>(after);
             while(dcml>1.0)dcml/=10.0;
             return whl+dcml;
         }
-        size_t converted;
-        Numeric_T rslt = stdcvt(s,&converted);
-        if(converted!=s.length()){
-            throw std::invalid_argument("parse_num: Not all characters converted");
+        Numeric_T rslt(0);
+        Numeric_T ten(10);
+        Numeric_T dgt;
+        Numeric_T quota;
+        bool hasinf = (!is_bignum) && std::numeric_limits<Numeric_T>::has_infinity;
+        Numeric_T inf;
+        if(hasinf&&(!is_bignum))inf = std::numeric_limits<Numeric_T>::infinity();
+        else inf=0;
+        Numeric_T ix = maxv/ten;
+        for(wchar_t ch : s){
+            if(ch<L'0'||ch>L'9'){
+                throw std::invalid_argument("parse_num: non-numeric character "+wtos(std::wstring()+ch));
+            }
+            dgt = static_cast<Numeric_T>(ch-L'0');
+            if(!is_bignum){
+                quota = maxv-dgt;
+                if(rslt>ix){
+                    throw std::out_of_range("Number over/underflow");
+                }
+            }
+            rslt *= ten;
+            if(!is_bignum){
+                if(rslt>quota){
+                    if(hasinf){
+                        if(invert)return -inf;
+                        return inf;
+                    }
+                    throw std::out_of_range("Number over/underflow");
+                }
+            }
+            rslt += dgt;
         }
+        if(invert)return -rslt;
         return rslt;
     }
     str subst(str x,List<str> values){

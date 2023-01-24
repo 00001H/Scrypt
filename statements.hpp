@@ -12,6 +12,9 @@ namespace scrypt{
             virtual void execute(Scope s) override{
                 (void)expr->evaluate(s);
             }
+            refExpression getExpr(){
+                return expr;
+            }
     };
     template<typename T,typename... Args>
     refStatement sNew(Args... args){

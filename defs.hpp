@@ -20,10 +20,10 @@ namespace scrypt{
             str getName() const{
                 return name;
             }
-            virtual int nArgs() const{
+            virtual size_t nArgs() const{
                 return argnames.size();
             }
-            virtual int nDArgs() const{
+            virtual size_t nDArgs() const{
                 return 0;//TODO
             }
             virtual refObject invoke(Scope outer,List<refExpression> args);
@@ -40,10 +40,10 @@ namespace scrypt{
                 this->argc = ac;
                 this->defc = dc;
             }
-            int nArgs() const override{
+            size_t nArgs() const override{
                 return argc;
             }
-            int nDArgs() const override{
+            size_t nDArgs() const override{
                 return defc;
             }
             virtual refObject invoke(Scope outer,List<refExpression> args) override{
@@ -71,6 +71,16 @@ namespace scrypt{
             void setClass(const Class* newcls){
                 cls = newcls;
             }
+            //returns a pointer created by `new` to the copied object. Can be passed to a smart pointer constructor.
+            Object* copy(){
+                Object* newObj = new Object();
+                newObj->invokeproc = invokeproc;
+                newObj->cls = cls;
+                newObj->attrs = attrs;//copy-by-value
+                newObj->data = data;
+                return newObj;
+            }
+            void bindMthTo(const refObject obj);
             Object() : invokeproc(nullptr), cls(nullptr), attrs({}), data(){}
             static inline refObject FuncObj(refProcedure proc);
             bool callable() const{
@@ -140,5 +150,21 @@ namespace scrypt{
     refExpression eNew(Args... args);
     template<typename T,typename... Args>
     refStatement sNew(Args... args);
+
+    typedef List<Dict<wint_t,long long>> Opmap;
+    extern const Opmap builtin_omp;
+    Opmap gen_opmap(const List<str>& ops);
+
+    void inline Object::bindMthTo(const refObject obj){
+        if(callable()){
+            invokeproc = Procedure::partial(invokeproc,{eNew<Constant>(obj)});
+        }
+    }
+    using basic_op_t = std::function<refObject(Scope,refExpression,refExpression)>;
+    struct BinOpData{
+        basic_op_t func;
+        size_t pty;
+        BinOpData(size_t pty,basic_op_t func) : func(func), pty(pty){}
+    };
 }
 #endif

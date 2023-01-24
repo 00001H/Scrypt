@@ -30,11 +30,14 @@ namespace scrypt{
         return None;
     }
     refProcedure Procedure::partial(refProcedure x,List<refExpression> params){
-        return refProcedure(new NativeFunc(x->nArgs(),x->nDArgs(),
-            [&x,&params](Scope s,List<refExpression> args){
+        if(x==nullptr){
+            throw std::logic_error("Attempting to partial nullptr");
+        }
+        return refProcedure(new NativeFunc(x->nArgs()-params.size(),std::max(x->nDArgs(),x->nArgs()-params.size()),
+            [x,params](Scope s,List<refExpression> args){
                 return x->invoke(s,params+args);
             }
-        ,x->getName()));
+        ,x->getName()+L"/partial"));
     }
     namespace builtins{
         refObject printfunc(Scope s,List<refExpression> args){

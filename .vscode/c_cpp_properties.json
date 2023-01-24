@@ -11,11 +11,7 @@
       "cppStandard": "c++23",
       "intelliSenseMode": "windows-gcc-x64",
       "compilerArgs": [
-        "-m64",
-        "-static",
-        "-s",
-        "-Wall",
-        "-Ofast"
+        "-m64"
       ]
     }
   ],

@@ -3,6 +3,7 @@
 //Centralized header includes: improves preprocessor performance
 #include<algorithm>
 #include<complex>
+#include<optional>
 #include<cfenv>
 #include<cmath>
 #include<string>
@@ -21,6 +22,8 @@
 #include<any>
 #include"cppp.hpp"
 namespace scrypt{
+    typedef long long default_int_t;
+    typedef long double default_float_t;
     #define ref(x) typedef std::shared_ptr<x> ref##x
     using str = std::wstring;
     /*
@@ -32,11 +35,11 @@ namespace scrypt{
     Therefore, a replacement "assert" function is included here.
     */
     #ifdef NDEBUG
-    void assert(bool must_be_true){}
+    void assert(bool must_be_true,str optmsg=L""){}
     #else
-    void assert(bool must_be_true){
+    void assert(bool must_be_true,str optmsg=L"<no info>"){
         if(!must_be_true){
-            throw std::logic_error("Assertion failed");
+            throw std::logic_error("Assertion failed: "+wtos(optmsg));
         }
     }
     #endif
@@ -52,6 +55,23 @@ namespace scrypt{
     ref(Class);
     class Procedure;
     ref(Procedure);
+    namespace priorities{
+        using pty_t = const size_t;
+        pty_t PTY_MAX = 50000;
+        pty_t EXPNT = 8200;
+        pty_t DIVMUL = 8000;
+        pty_t ADDSUB = 7800;
+    }
+    namespace op_specs{
+        struct op_spec{
+            str st;
+            str sym;
+            op_spec(str st,str sym) : st(st), sym(sym){}
+            str dunder() const{return L"__"+st+L"__";}
+            str rdunder() const{return L"__r"+st+L"__";}
+        };
+        op_spec add(L"add",L"+");
+    }
     #undef ref
 }
 #endif

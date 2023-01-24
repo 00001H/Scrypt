@@ -24,7 +24,11 @@ int main(){
             }
             if(stmt!=nullptr){
                 try{
-                    stmt->invoke(sp);
+                    if(isinstanceof<ExprStmt>(stmt)){
+                        wcout << dynamic_cast<ExprStmt&>(*stmt).getExpr()->evaluate(sp)->stringify(sp) << endl;
+                    }else{
+                        stmt->invoke(sp);
+                    }
                 }catch(ProgramError& e){
                     e.addFrame({L"<shell>",L"<shell-main>",scnr.pos()});
                     wcout << e.dump() << endl;

@@ -4,7 +4,6 @@
 #include"../expression.hpp"
 #include"../statements.hpp"
 namespace scrypt{
-    typedef List<Dict<wint_t,long long>> Opmap;
     namespace{
         const long long int OK=-1,DONE_INDEX=1;
     }
@@ -246,6 +245,10 @@ namespace scrypt{
             num += chr;
         }
         if(!num.empty()){
+            while(num.back()==L'-'){
+                num.pop_back();
+                scn.advance(-1);
+            }
             if(num.back()==L'e'){
                 throw ParseError(L"A numeric literal cannot end with an \"e\"",scn.pos());
             }
@@ -257,9 +260,9 @@ namespace scrypt{
             }
             try{
                 if(isdcml||isscnt){
-                    return eNew<Constant>(LPFloat->construct(ds,parse_num<long double>(num,wstold)));
+                    return eNew<Constant>(lpfloat()->construct(ds,parse_num<long double>(num)));
                 }
-                return eNew<Constant>(LPInt->construct(ds,parse_num<long long>(num,wstoll)));
+                return eNew<Constant>(lpint()->construct(ds,parse_num<long long>(num)));
             }catch(std::out_of_range&){
                 throw ParseError(L"Number is too big or too small",scn.pos());
             }catch(ArithmeticError& e){
@@ -267,18 +270,39 @@ namespace scrypt{
                 throw ParseError(L"Bad scientific notation: "+e.dump(),scn.pos());
             }
         }
+        scn.seek(bgn);
         throw NoParse(L"Value expected",bgn);
     }
     List<refExpression> expect_commasep_expr(Scanner&,bool=false) noexcept(false);
     refExpression expect_expr(Scanner& scn) noexcept(false){
         scn.consume_lwspcs();
-        refExpression curr = expect_value(scn);
-        if(curr==nullptr){
-            throw NoParse("Expected value for start of expression",scn.pos());
+        if(scn.next(L'(')){
+            refExpression parenthesized;
+            try{
+                parenthesized = expect_expr(scn);
+            }catch(NoParse& e){
+                throw ParseError(L"Expression expected ("+stow(e.what())+L")",scn.pos());
+            }
+            parenthesized->make_parenthesized();
+            if(!scn.next(L')')){
+                throw ParseError(L"Closing parenthese expected",scn.pos());
+            }
+            return parenthesized;
         }
+        refExpression curr;
+        try{
+            curr = expect_value(scn);
+        }catch(NoParse& e){
+            //TODO: Add support for unary prefix operators
+            throw NoParse(L"Expected value for start of expression ("+stow(e.what())+L")",scn.pos());
+        }
+        str matched;
         while(true){
             scn.consume_lwspcs();
-            if(scn.next(L'=')){
+            if(!(matched = scn.next(builtin_omp)).empty()){
+                const auto& opdata = builtin_operators.get(matched);
+                curr = eNew<BinOp>(opdata,curr,expect_expr(scn));
+            }else if(scn.next(L'=')){
                 curr = eNew<Assign>(curr,expect_expr(scn));
             }else if(scn.next(L'(')){
                 auto args = expect_commasep_expr(scn);
@@ -314,7 +338,7 @@ namespace scrypt{
         throw *ex;
        //TODO: add statements
     }
-    List<refExpression> expect_commasep_expr(Scanner& scn,bool require_one/*=false*/) noexcept(false){
+    List<refExpression> expect_commasep_expr(Scanner& scn,bool require_one/*=false(from previous declaration)*/) noexcept(false){
         scn.consume_lwspcs();
         size_t bgn = scn.pos();
         List<refExpression> lst;

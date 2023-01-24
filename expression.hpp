@@ -69,26 +69,26 @@ the original RHS's LHS with this operator,
 and change this operator to the original RHS.
 */
 namespace scrypt{
-    class BiOp : public Expression{
+    class BinOp : public Expression{
         refExpression lhs;
         refExpression rhs;
-        BinOpData::invoke_t oncall;
+        basic_op_t oncall;
         size_t pty;
         public:
-            BiOp& operator=(const BiOp& other){
+            BinOp& operator=(const BinOp& other){
                 lhs = other.lhs;
                 rhs = other.rhs;
                 oncall = other.oncall;
                 pty = other.pty;
                 return *this;
             }
-            BiOp(BinOpData dt,refExpression lhs,refExpression rhs) : rhs(rhs), oncall(dt.func), pty(dt.pty){
-                if(isinstanceof<BiOp>(rhs)){
-                    BiOp& crhs = *dynamic_cast<BiOp*>(rhs.get());
+            BinOp(const BinOpData& dt,refExpression lhs,refExpression rhs) : lhs(lhs), rhs(rhs), oncall(dt.func), pty(dt.pty){
+                if(isinstanceof<BinOp>(rhs)){
+                    BinOp& crhs = *dynamic_cast<BinOp*>(rhs.get());
                     size_t rpty = crhs.pty;
-                    if(pty>rpty){
+                    if(!(rhs->parenthesized())&&pty>rpty){
                         rhs = crhs.lhs;
-                        crhs.lhs = eNew<BiOp>(*this);
+                        crhs.lhs = eNew<BinOp>(*this);
                         (*this) = crhs;
                     }
                 }

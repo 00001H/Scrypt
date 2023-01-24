@@ -4,37 +4,37 @@
 #include"objects.hpp"
 #include"expression.hpp"
 namespace scrypt{
-    struct BinOpData{
-        using invoke_t = std::function<refObject(Scope,refExpression,refExpression)>;
-        invoke_t func;
-        size_t pty;
-        BinOpData(size_t pty,invoke_t func) : func(func), pty(pty){}
-    };
-    namespace priorities{
-        using pty_t = const size_t;
-        pty_t PTY_MAX = 50000;
-        pty_t EXPNT = 8200;
-        pty_t DIVMUL = 8000;
-        pty_t ADDSUB = 7800;
+    template<op_specs::op_spec*>
+    refObject basic_op(Scope,refExpression,refExpression);
+    namespace{
+        template<op_specs::op_spec* funcname>
+        basic_op_t op_for(){
+            return static_cast<basic_op_t>(basic_op<funcname>);
+        }
     }
-    refObject plus(Scope s,refExpression lhs,refExpression rhs){
+    basic_op_t addition_op = op_for<&op_specs::add>();
+    template<op_specs::op_spec* funcname>
+    refObject basic_op(Scope s,refExpression lhs,refExpression rhs){
         refObject a0 = lhs->evaluate(s);
         refObject a1 = rhs->evaluate(s);
-        if(a0->hasattr(L"__add__")){
-            refObject addf = a0->getattr(L"__add__");
+        str dunder_name = funcname->dunder();
+        str rdunder_name = funcname->rdunder();
+        if(a0->hasattr(dunder_name)){
+            refObject addf = a0->getattr(dunder_name);
             if(!addf->callable()){
-                throw OperatorError(L"operator +: __add__ present but not callable for object "+a0->stringify(s));
+                throw OperatorError(L"operator "+funcname->sym+L": "+dunder_name+L" present but not callable for object "+a0->stringify(s));
             }
             try{
                 return addf->invoke(s,{eNew<Constant>(a1)});
-            }catch(OperatorError&){
+            }catch(OperatorError& e){
+                std::wcout << L"Add failed. Fallback..." << e.dump() << std::endl;
                 //falls back to __radd__
             }
         }
-        if(a1->hasattr(L"__radd__")){
-            refObject addf = a1->getattr(L"__add__");
+        if(a1->hasattr(rdunder_name)){
+            refObject addf = a1->getattr(rdunder_name);
             if(!addf->callable()){
-                throw OperatorError(L"operator +: __radd__ present but not callable for object "+a1->stringify(s));
+                throw OperatorError(L"operator "+funcname->sym+L": "+rdunder_name+L" present but not callable for object "+a1->stringify(s));
             }
             try{
                 return addf->invoke(s,{eNew<Constant>(a0)});
@@ -42,13 +42,14 @@ namespace scrypt{
                 //cannot add
             }
         }
-        throw OperatorError(L"operator +: Cannot add together a "+a0->getClass().getName()+L" and a "+a1->getClass().getName());
+        throw OperatorError(L"operator "+funcname->sym+L": Cannot "+funcname->st+L" a "+a0->getClass().getName()+L" and a "+a1->getClass().getName());
     }
     Dict<str,BinOpData> builtin_operators(
         Dict<str,BinOpData>::of(
-            L"+",{priorities::ADDSUB,plus}
+            L"+",{priorities::ADDSUB,addition_op}
         )
     );
+    const Opmap builtin_omp = gen_opmap(builtin_operators.keys());
     BinOpData* oplookup(const str& x){
         return &builtin_operators.get(x);
     }
