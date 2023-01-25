@@ -21,9 +21,11 @@
 #include<deque>
 #include<any>
 #include"cppp.hpp"
+using namespace cppp;
 namespace scrypt{
-    typedef long long default_int_t;
+    typedef int64_t default_int_t;
     typedef long double default_float_t;
+    static_assert(sizeof(default_float_t)>=8);
     #define ref(x) typedef std::shared_ptr<x> ref##x
     using str = std::wstring;
     /*

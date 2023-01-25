@@ -5,11 +5,11 @@
 #include"../statements.hpp"
 namespace scrypt{
     namespace{
-        const long long int OK=-1,DONE_INDEX=1;
+        const size_t OK=-1,DONE_INDEX=1;
     }
     Opmap gen_opmap(const List<str>& ops){
-        Opmap opmap{{},Dict<wint_t,long long>::of(WEOF,OK)};
-        long long int state,ostate;
+        Opmap opmap{{},Dict<wint_t,size_t>::of(WEOF,OK)};
+        size_t state,ostate;
         wchar_t ch;
         for(const auto& op : ops){
             state = 0;
@@ -21,7 +21,7 @@ namespace scrypt{
                     if(state==DONE_INDEX){
                         state = opmap.size();
                         opmap[ostate].addOrSet(ch,state);
-                        opmap.append(Dict<wint_t,long long>::of(WEOF,OK));
+                        opmap.append(Dict<wint_t,size_t>::of(WEOF,OK));
                     }else if(i==(op.size()-1)){
                         opmap[state].addOrSet(WEOF,OK);
                     }
@@ -32,7 +32,7 @@ namespace scrypt{
                     }
                     opmap[state].addOrSet(ch,opmap.size());
                     state = opmap.size();
-                    opmap.append(Dict<wint_t,long long>::of());
+                    opmap.append({});
                     if(i==0){
                         opmap[0].addOrSet(ch,state);
                     }
@@ -44,55 +44,47 @@ namespace scrypt{
     const List<wchar_t> whitespaces
     {L'\t',L' ',L'\0'};
     class Scanner{
+        using i_t = std::make_signed_t<size_t>;
         str data;
-        size_t loc;
-        private:
-            bool inrng(long long pos) const{
-                return pos>=0&&pos<static_cast<signed long long>(data.length());
-            }
+        i_t loc;
         public:
             size_t pos() const{
                 return loc;
             }
             Scanner(const str& dat) : data(dat), loc(0){}
             Scanner() : Scanner(L""){}
-            void reset(str nw,size_t npos=0ull){
+            void reset(str nw,i_t npos=0ull){
                 data = nw;
                 seek(npos);
             }
-            bool seek(signed long long pos){
-                loc = static_cast<size_t>(std::max<signed long long>(0,std::min<signed long long>(data.length(),pos)));
-                return static_cast<signed long long>(loc)==pos;
-            }
-            wint_t operator()(long long x=0ll) const{
-                return get(x);
+            bool seek(i_t pos){
+                loc = std::max<i_t>(0,std::min<i_t>(pos,data.length()));
+                return loc==pos;
             }
             size_t consume_lwspcs(const List<wchar_t>& whtspcs=whitespaces){
                 size_t i=0;
-                while(whtspcs.contains(get())){advance();++i;}
+                while(whtspcs.contains((*this)())){advance();++i;}
                 return i;
             }
-            bool advance(signed long long dta=1){
-                return seek(static_cast<signed long long>(loc)+dta);
+            bool advance(i_t dta=1){
+                return seek(loc+dta);
             }
             bool done() const{
-                return loc==data.length();
+                return loc==i_t(data.length());
             }
-            wint_t get(signed long long fwd=0) const{
-                long long nwpos = loc+fwd;
-                if(!inrng(nwpos)){
-                    return WEOF;
-                }
-                return data[nwpos];
+            wint_t operator()(i_t fwd=0) const{
+                i_t nwp = loc+fwd;
+                if(nwp<0||nwp>=i_t(data.length()))return WEOF;
+                return data[nwp];
             }
             str next(const std::function<bool(wchar_t, size_t)>& pred){
                 size_t i = 0;
                 str mtchd;
-                while(!done()&&pred(get(),i)){mtchd+=get();advance();++i;}
+                while(!done()&&pred((*this)(),i)){mtchd+=(*this)();advance();++i;}
                 return mtchd;
             }
             wint_t next(const List<wchar_t>& options){
-                wint_t tmp = get();
+                wint_t tmp = (*this)();
                 if(tmp==WEOF)return WEOF;
                 for(const wchar_t& option : options){
                     if(option==tmp){
@@ -105,7 +97,7 @@ namespace scrypt{
             str next(const str& st){
                 size_t adv=0;
                 for(const wchar_t& ch : st){
-                    if(get(adv)!=static_cast<wint_t>(ch))return L"";
+                    if((*this)(adv)!=static_cast<wint_t>(ch))return L"";
                     ++adv;
                 }
                 advance(adv);
@@ -113,23 +105,23 @@ namespace scrypt{
             }
             bool next(wint_t ch){
                 if(done())return false;
-                bool x = (get()==ch);
+                bool x = ((*this)()==ch);
                 if(x){
                     advance();
                 }
                 return x;
             }
             str next(const Opmap& mp){
-                long long state = 0;
+                size_t state = 0;
                 List<size_t> exitpoints;
                 size_t mov=0;
                 wint_t ch;
                 str matched;
-                while(((ch=get(mov))!=WEOF)&&(mp[state].has(ch))){
+                while(((ch=(*this)(mov))!=WEOF)&&(mp[state].has(ch))){
                     state = mp[state].get(ch);
                     ++mov;
                     matched += ch;
-                    if(mp[state].get(WEOF,-2)==-1){
+                    if(mp[state].get(WEOF,-2)==size_t(-1)){
                         exitpoints.append(mov);
                     }
                 }
@@ -260,9 +252,9 @@ namespace scrypt{
             }
             try{
                 if(isdcml||isscnt){
-                    return eNew<Constant>(lpfloat()->construct(ds,parse_num<long double>(num)));
+                    return eNew<Constant>(lpfloat()->construct(ds,parse_num<default_float_t>(num)));
                 }
-                return eNew<Constant>(lpint()->construct(ds,parse_num<long long>(num)));
+                return eNew<Constant>(lpint()->construct(ds,parse_num<default_int_t>(num)));
             }catch(std::out_of_range&){
                 throw ParseError(L"Number is too big or too small",scn.pos());
             }catch(ArithmeticError& e){
@@ -276,32 +268,32 @@ namespace scrypt{
     List<refExpression> expect_commasep_expr(Scanner&,bool=false) noexcept(false);
     refExpression expect_expr(Scanner& scn) noexcept(false){
         scn.consume_lwspcs();
+        refExpression curr;
         if(scn.next(L'(')){
-            refExpression parenthesized;
             try{
-                parenthesized = expect_expr(scn);
+                curr = expect_expr(scn);
             }catch(NoParse& e){
                 throw ParseError(L"Expression expected ("+stow(e.what())+L")",scn.pos());
             }
-            parenthesized->make_parenthesized();
+            curr->make_parenthesized();
             if(!scn.next(L')')){
                 throw ParseError(L"Closing parenthese expected",scn.pos());
             }
-            return parenthesized;
-        }
-        refExpression curr;
-        try{
-            curr = expect_value(scn);
-        }catch(NoParse& e){
-            //TODO: Add support for unary prefix operators
-            throw NoParse(L"Expected value for start of expression ("+stow(e.what())+L")",scn.pos());
+        }else{
+            try{
+                curr = expect_value(scn);
+            }catch(NoParse& e){
+                //TODO: Add support for unary prefix operators
+                throw NoParse(L"Expected value for start of expression ("+stow(e.what())+L")",scn.pos());
+            }
         }
         str matched;
         while(true){
             scn.consume_lwspcs();
             if(!(matched = scn.next(builtin_omp)).empty()){
                 const auto& opdata = builtin_operators.get(matched);
-                curr = eNew<BinOp>(opdata,curr,expect_expr(scn));
+                auto other = expect_expr(scn);
+                curr = eNew<BinOp>(opdata,curr,other);
             }else if(scn.next(L'=')){
                 curr = eNew<Assign>(curr,expect_expr(scn));
             }else if(scn.next(L'(')){

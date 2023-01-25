@@ -59,7 +59,7 @@ namespace scrypt{
         return result;
     }
     template<typename Numeric_T>
-    Numeric_T parse_num(str s,bool is_bignum=false){
+    Numeric_T parse_num(str s,bool is_bignum=false,Numeric_T multiplier=10,bool rev=true){
         if(!s.length()){
             throw std::invalid_argument("parse_num: no number");
         }
@@ -92,43 +92,46 @@ namespace scrypt{
             if(bfore.empty()||after.empty()||after.contains(L'.')){
                 throw std::invalid_argument("parse_num: Invalid placement of \".\" or multiple \".\"s detected");
             }
-            Numeric_T whl = parse_num<Numeric_T>(bfore);
-            Numeric_T dcml = parse_num<Numeric_T>(after);
-            while(dcml>1.0)dcml/=10.0;
-            return whl+dcml;
+            Numeric_T whl = parse_num<Numeric_T>(bfore,is_bignum);
+            Numeric_T dcml = parse_num<Numeric_T>(after,is_bignum,0.1,!rev);
+            return whl+dcml/Numeric_T(10);
         }
         Numeric_T rslt(0);
-        Numeric_T ten(10);
         Numeric_T dgt;
-        Numeric_T quota;
-        bool hasinf = (!is_bignum) && std::numeric_limits<Numeric_T>::has_infinity;
-        Numeric_T inf;
-        if(hasinf&&(!is_bignum))inf = std::numeric_limits<Numeric_T>::infinity();
-        else inf=0;
-        Numeric_T ix = maxv/ten;
-        for(wchar_t ch : s){
+        Numeric_T multipliere(1);
+        bool bad_on_next = false;
+        size_t j;
+        wchar_t ch;
+        for(size_t i=0;i<s.length();++i){
+            j = ((rev)?(s.length()-1-i):(i));
+            ch = s[j];
+            if(bad_on_next){
+                throw std::out_of_range("Number over/underflow");
+            }
             if(ch<L'0'||ch>L'9'){
                 throw std::invalid_argument("parse_num: non-numeric character "+wtos(std::wstring()+ch));
             }
             dgt = static_cast<Numeric_T>(ch-L'0');
             if(!is_bignum){
-                quota = maxv-dgt;
-                if(rslt>ix){
+                if(multipliere>Numeric_T(1)&&((maxv/multipliere)<dgt)){
                     throw std::out_of_range("Number over/underflow");
                 }
             }
-            rslt *= ten;
+            dgt *= multipliere;
+            if(!is_bignum&&multiplier>1){
+                if(maxv/multipliere < multiplier){
+                    bad_on_next = true;
+                }
+            }
+            multipliere *= multiplier;
             if(!is_bignum){
-                if(rslt>quota){
-                    if(hasinf){
-                        if(invert)return -inf;
-                        return inf;
-                    }
+                if((maxv-rslt)<dgt){
                     throw std::out_of_range("Number over/underflow");
                 }
             }
             rslt += dgt;
         }
+        std::endl(std::wcout);
         if(invert)return -rslt;
         return rslt;
     }

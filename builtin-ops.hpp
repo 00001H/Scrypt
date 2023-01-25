@@ -27,8 +27,7 @@ namespace scrypt{
             try{
                 return addf->invoke(s,{eNew<Constant>(a1)});
             }catch(OperatorError& e){
-                std::wcout << L"Add failed. Fallback..." << e.dump() << std::endl;
-                //falls back to __radd__
+                //falls back to __rxxx__
             }
         }
         if(a1->hasattr(rdunder_name)){

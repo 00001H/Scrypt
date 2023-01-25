@@ -130,20 +130,27 @@ namespace scrypt{
                     bool otherflt=false;
                     if(isinstanceof<DataType<default_float_t>>(other->getClass())){
                         otherflt=true;
-                    }
-                    if(!isinstanceof<DataType<default_int_t>>(other->getClass())){
+                    }else if(!isinstanceof<DataType<default_int_t>>(other->getClass())){
                         throw OperatorError(L"Numeric operation attempted against nonnumeric type");
                     }
                     bool flt=thisflt||otherflt;
                     if(flt){
-                        auto tft = this_->data.as<default_float_t>();
-                        auto oft = this_->data.as<default_float_t>();
-                        auto rslt = (*x)(tft,oft);
+                        default_float_t tft = (
+                    thisflt
+                        ?this_->data.as<default_float_t>()
+                        :static_cast<default_float_t>(this_->data.as<default_int_t>())
+                        );
+                        default_float_t oft = (
+                        otherflt
+                        ?other->data.as<default_float_t>()
+                        :static_cast<default_float_t>(other->data.as<default_int_t>())
+                        );
+                        default_float_t rslt = (*x)(tft,oft);
                         return lpfloat()->construct(s,rslt);
                     }else{
-                        auto tft = this_->data.as<default_int_t>();
-                        auto oft = this_->data.as<default_int_t>();
-                        auto rslt = (*x)(tft,oft);
+                        default_int_t tft = this_->data.as<default_int_t>();
+                        default_int_t oft = other->data.as<default_int_t>();
+                        default_int_t rslt = (*x)(tft,oft);
                         return lpint()->construct(s,rslt);
                     }
                 }

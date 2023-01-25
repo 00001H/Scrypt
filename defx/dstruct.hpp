@@ -17,11 +17,11 @@ namespace scrypt{
             operator std::basic_string<E> () const{
                 return std::basic_string<E>(container);
             }
-            E& operator[](long long i){
+            E& operator[](std::make_signed_t<size_t> i){
                 if(i<0)i += size();
                 return container[i];
             }
-            const E& operator[](long long i) const{
+            const E& operator[](std::make_signed_t<size_t> i) const{
                 if(i<0)i += size();
                 return container[i];
             }
@@ -50,14 +50,14 @@ namespace scrypt{
             void prepend(const E& elem){
                 container.push_front(elem);
             }
-            long long find(const E& elem) const{
+            size_t find(const E& elem) const{
                 for(size_t i=0;i<container.size();++i){
-                    if(container[i]==elem)return static_cast<long long>(i);
+                    if(container[i]==elem)return i;
                 }
                 return -1;
             }
             bool contains(const E& elem) const{
-                return find(elem)!=-1;
+                return find(elem)!=size_t(-1);
             }
             auto begin(){
                 return container.begin();
@@ -317,10 +317,10 @@ namespace scrypt{
             DT which() const{
                 return what;
             }
-            Data(long long x) : Data(){
+            Data(default_int_t x) : Data(){
                 *this = x;
             }
-            Data(long double x) : Data(){
+            Data(default_float_t x) : Data(){
                 *this = x;
             }
             Data(str x) : Data(){
@@ -329,12 +329,12 @@ namespace scrypt{
             Data(void* x) : Data(){
                 *this = x;
             }
-            Data& operator =(long long x){
+            Data& operator =(default_int_t x){
                 what = I;
                 a = x;
                 return *this;
             };
-            Data& operator =(long double x){
+            Data& operator =(default_float_t x){
                 what = D;
                 a = x;
                 return *this;
@@ -367,14 +367,14 @@ namespace scrypt{
         return std::any_cast<void*>(a);
     }
     template<>
-    long long Data::as<long long>() const{
+    default_int_t Data::as<default_int_t>() const{
         if(what!=I)bad();
-        return std::any_cast<long long>(a);
+        return std::any_cast<default_int_t>(a);
     }
     template<>
-    long double Data::as<long double>() const{
+    default_float_t Data::as<default_float_t>() const{
         if(what!=D)bad();
-        return std::any_cast<long double>(a);
+        return std::any_cast<default_float_t>(a);
     }
 }
 #endif

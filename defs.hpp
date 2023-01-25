@@ -151,7 +151,7 @@ namespace scrypt{
     template<typename T,typename... Args>
     refStatement sNew(Args... args);
 
-    typedef List<Dict<wint_t,long long>> Opmap;
+    typedef List<Dict<wint_t,size_t>> Opmap;
     extern const Opmap builtin_omp;
     Opmap gen_opmap(const List<str>& ops);
 
