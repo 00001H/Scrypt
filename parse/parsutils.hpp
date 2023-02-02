@@ -255,11 +255,8 @@ namespace scrypt{
                     return eNew<Constant>(lpfloat()->construct(ds,parse_num<default_float_t>(num)));
                 }
                 return eNew<Constant>(lpint()->construct(ds,parse_num<default_int_t>(num)));
-            }catch(std::out_of_range&){
-                throw ParseError(L"Number is too big or too small",scn.pos());
-            }catch(ArithmeticError& e){
-                //"arithmetic" is only performed with a 'e'
-                throw ParseError(L"Bad scientific notation: "+e.dump(),scn.pos());
+            }catch(std::out_of_range& e){
+                throw ParseError(L"Number is too big or too small!("+stow(std::string(e.what()))+L')',scn.pos());
             }
         }
         scn.seek(bgn);

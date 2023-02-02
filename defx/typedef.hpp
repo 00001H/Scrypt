@@ -21,7 +21,9 @@
 #include<deque>
 #include<any>
 #include"cppp.hpp"
-using namespace cppp;
+using cppp::wtos;
+using cppp::stow;
+using cppp::isinstanceof;
 namespace scrypt{
     typedef int64_t default_int_t;
     typedef long double default_float_t;

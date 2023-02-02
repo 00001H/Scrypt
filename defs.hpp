@@ -48,7 +48,7 @@ namespace scrypt{
             }
             virtual refObject invoke(Scope outer,List<refExpression> args) override{
                 if(args.size()<(argc-defc)||args.size()>argc){
-                    throw FuncCallError(subst(L"Calling builtin-function "+name+L" which accepts $ arguments with $ arguments",{
+                    throw FuncCallError(cppp::subst<>(L"Calling builtin-function "+name+L" which accepts $ arguments with $ arguments",{
                         std::to_wstring(argc),
                         std::to_wstring(args.size())
                         }));

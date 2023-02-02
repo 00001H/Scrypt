@@ -3,8 +3,6 @@
 using namespace scrypt;
 using namespace std;
 int main(){
-    str st = subst(L"This $ costs $$#$.",{L"thing",L"54"});
-    assert(st==L"This thing costs $54.");
     /*
     Procedure main(what, funct, what2){
         print(what);

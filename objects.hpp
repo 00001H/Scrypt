@@ -25,7 +25,7 @@ namespace scrypt{
                 obj->setClass(this);
             }
             void post_construct(Scope scop,refObject& obj) const{
-                obj->attrs.reevaluateEach([&obj](const str& attrname,refObject& attrval){
+                obj->attrs.forEach([&obj](const str& attrname,refObject& attrval){
                     if(attrval->callable()){
                         attrval = refObject(attrval->copy());
                         attrval->bindMthTo(obj);
@@ -69,7 +69,7 @@ namespace scrypt{
                 if(obj.callable()){
                     return L"<Function\""+obj.onCall()->getName()+L"\">";
                 }
-                return L"<Object@"+std::to_wstring(numberAddr(&obj))+L'>';
+                return L"<Object@"+std::to_wstring(size_t(&obj))+L'>';
             }
             virtual ~Class(){}
     };

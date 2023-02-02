@@ -9,7 +9,7 @@ namespace scrypt{
     #define stri std::to_wstring
     refObject Procedure::invoke(Scope outer,List<refExpression> args){
         if(args.size()!=argnames.size()){
-            throw FuncCallError(subst(L"Calling function "+name+L" which accepts $ arguments with $ arguments",{
+            throw FuncCallError(cppp::subst<>(L"Calling function "+name+L" which accepts $ arguments with $ arguments",{
                 stri(argnames.size()),
                 stri(args.size())
                 }));
